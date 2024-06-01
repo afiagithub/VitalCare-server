@@ -31,12 +31,24 @@ async function run() {
 
         app.post("/users", async (req, res) => {
             const user = req.body;
-            const query = { email: user.email }
-            const isExist = await userCollection.findOne(query);
+            const query1 = { email: user.email }
+            const isExist = await userCollection.findOne(query1);
             if (isExist) {
                 return res.send({ message: 'User Already Exists' })
             }
+            const query2 = { user_id: user.user_id }
+            const userExist = await userCollection.findOne(query2);
+            if (userExist) {
+                return res.send({ message: 'User Already Exists' })
+            }
             const result = await userCollection.insertOne(user);
+            res.send(result)
+        })
+
+        app.get("/users/:email", async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const result = await userCollection.findOne(query);
             res.send(result)
         })
 
