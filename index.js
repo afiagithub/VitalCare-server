@@ -76,8 +76,15 @@ async function run() {
         })
 
         // all tests APIs
-        app.get("/tests", async(req, res) => {
+        app.get("/tests", async (req, res) => {
             const result = await testsCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.get("/tests/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await testsCollection.findOne(query)
             res.send(result)
         })
 
