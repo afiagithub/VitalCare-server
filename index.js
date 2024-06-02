@@ -28,7 +28,9 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         // await client.connect();
         const userCollection = client.db('diagnosDB').collection('users')
+        const testsCollection = client.db('diagnosDB').collection('tests')
 
+        // user APIs
         app.post("/users", async (req, res) => {
             const user = req.body;
             const query1 = { email: user.email }
@@ -45,10 +47,37 @@ async function run() {
             res.send(result)
         })
 
-        app.get("/users/:email", async (req, res) => {
-            const email = req.params.email;
-            const query = { email: email };
+        app.get("/users/:uid", async (req, res) => {
+            const user_id = req.params.uid;
+            const query = { user_id: user_id };
             const result = await userCollection.findOne(query);
+            res.send(result)
+        })
+
+        app.put("/users/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const options = { upsert: true };
+            const updatedUser = req.body;
+            const updatedDoc = {
+                $set: {
+                    name: updatedUser.name,
+                    email: updatedUser.email,
+                    user_id: updatedUser.user_id,
+                    photo: updatedUser.photo,
+                    bloodType: updatedUser.bloodType,
+                    dist: updatedUser.dist,
+                    upazila: updatedUser.upazila,
+                    status: updatedUser.status
+                }
+            }
+            const result = await userCollection.updateOne(filter, updatedDoc, options);
+            res.send(result)
+        })
+
+        // all tests APIs
+        app.get("/tests", async(req, res) => {
+            const result = await testsCollection.find().toArray()
             res.send(result)
         })
 
