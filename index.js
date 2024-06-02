@@ -78,7 +78,10 @@ async function run() {
         // all tests APIs
         app.get("/tests", async (req, res) => {
             const date = req.query.date;
-            const query = { date: { $gte: date } };
+            let query = {}
+            if(date){
+                query = { date: { $gte: date } };
+            }            
             const result = await testsCollection.find(query).toArray()
             res.send(result)
         })
@@ -94,6 +97,31 @@ async function run() {
             const date = req.query.date;
             const query = { date: date };
             const result = await testsCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        app.patch("/tests/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updatedTest = req.body;
+            const updatedDoc = {
+                $set: {
+                    image: updatedTest.image,
+                    date: updatedTest.date,
+                    slots: updatedTest.slots,
+                    cost: updatedTest.cost,
+                    title: updatedTest.title,
+                    short_description: updatedTest.short_description,
+                }
+            }
+            const result = await testsCollection.updateOne(filter, updatedDoc);
+            res.send(result)
+        })
+
+        app.delete("/tests/:id", async(req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await testsCollection.deleteOne(query);
             res.send(result)
         })
 
