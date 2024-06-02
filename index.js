@@ -77,7 +77,9 @@ async function run() {
 
         // all tests APIs
         app.get("/tests", async (req, res) => {
-            const result = await testsCollection.find().toArray()
+            const date = req.query.date;
+            const query = { date: { $gte: date } };
+            const result = await testsCollection.find(query).toArray()
             res.send(result)
         })
 
@@ -85,6 +87,13 @@ async function run() {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await testsCollection.findOne(query)
+            res.send(result)
+        })
+
+        app.get("/filter-tests", async (req, res) => {
+            const date = req.query.date;
+            const query = { date: date };
+            const result = await testsCollection.find(query).toArray()
             res.send(result)
         })
 
