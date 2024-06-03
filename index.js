@@ -90,6 +90,22 @@ async function run() {
             res.send({ admin })
         })
 
+        app.get("/users/blocked/:email", verifyToken, async (req, res) => {
+            const email = req.params.email;
+            if (email !== req.decoded.email) {
+                return res.status(403).send({ message: "forbidden access" })
+            }
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            // console.log(user);
+            let blocked = false;
+            if (user) {
+                blocked = user?.status === 'blocked'
+                // console.log(admin);
+            }
+            res.send({ blocked })
+        })
+
         app.post("/users", async (req, res) => {
             const user = req.body;
             const query1 = { email: user.email }
