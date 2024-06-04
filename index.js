@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config()
 const port = process.env.PORT || 5000;
 
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
 // middleware
 app.use(cors({
     origin: ["http://localhost:5173"],
@@ -30,6 +32,9 @@ async function run() {
         // await client.connect();
         const userCollection = client.db('diagnosDB').collection('users')
         const testsCollection = client.db('diagnosDB').collection('tests')
+        const districtsCollection = client.db('diagnosDB').collection('districts')
+        const upazilasCollection = client.db('diagnosDB').collection('upazilas')
+        const reserveCollection = client.db('diagnosDB').collection('reservations')
 
         // jwt token API
         app.post("/jwt", async (req, res) => {
@@ -90,18 +95,16 @@ async function run() {
             res.send({ admin })
         })
 
-        app.get("/users/blocked/:email", verifyToken, async (req, res) => {
+        app.get("/userlist/blocked/:email", verifyToken, async (req, res) => {
             const email = req.params.email;
             if (email !== req.decoded.email) {
                 return res.status(403).send({ message: "forbidden access" })
             }
             const query = { email: email };
             const user = await userCollection.findOne(query);
-            // console.log(user);
             let blocked = false;
             if (user) {
                 blocked = user?.status === 'blocked'
-                // console.log(admin);
             }
             res.send({ blocked })
         })
@@ -234,6 +237,55 @@ async function run() {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await testsCollection.deleteOne(query);
+            res.send(result)
+        })
+
+        app.get("/districts", async (req, res) => {
+            const result = await districtsCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.get("/upazilas", async (req, res) => {
+            const result = await upazilasCollection.find().toArray()
+            res.send(result)
+        })
+
+        // payment
+        app.post("/create-payment-intent", async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100)
+            console.log(amount);
+
+            // Create a PaymentIntent with the order amount and currency
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: [
+                    'card'
+                ]
+            });
+
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
+
+        // reservation APIs
+        app.get("/reserve/:email", verifyToken, async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            if (req.params.email !== req.decoded.email) {
+                return res.status(403).send({ message: 'Forbidden Access' })
+            }
+            const result = await reserveCollection.find(query).toArray()
+            res.send(result)
+
+        })
+
+
+        app.post('/reserve', async (req, res) => {
+            const reservation = req.body;
+            const result = await reserveCollection.insertOne(reservation);
             res.send(result)
         })
 
