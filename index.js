@@ -269,6 +269,7 @@ async function run() {
                 clientSecret: paymentIntent.client_secret,
             });
         });
+        
 
         // reservation APIs
         app.get("/reserve/:email", verifyToken, async (req, res) => {
@@ -286,6 +287,13 @@ async function run() {
         app.post('/reserve', async (req, res) => {
             const reservation = req.body;
             const result = await reserveCollection.insertOne(reservation);
+            res.send(result)
+        })
+
+        app.delete("/reserve/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await reserveCollection.deleteOne(query);
             res.send(result)
         })
 
