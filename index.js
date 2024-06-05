@@ -380,6 +380,26 @@ async function run() {
             res.send(result)
         })
 
+        app.post("/banners", async (req, res) => {
+            const newBanner = req.body;
+            const result = await bannerCollection.insertOne(newBanner);
+            res.send(result)
+        })
+
+        app.get("/banner", async (req, res) => {
+            const query = { isActive: true }
+            const result = await bannerCollection.findOne(query);
+            res.send(result)
+        })
+
+        app.get("/banners/:code", verifyToken, async (req, res) => {
+            const coupon = req.params.code;
+            const query = { coupon_code_name: coupon, isActive: true };
+            const result = await bannerCollection.findOne(query);
+            console.log(result);
+            res.send(result)
+        })
+
         app.patch("/banners/:id", async (req, res) => {
             const id = req.params.id;
             const filter1 = {};
@@ -394,10 +414,17 @@ async function run() {
                 $set: {
                     isActive: true
                 }
-            }            
+            }
             const result1 = await bannerCollection.updateMany(filter1, deactivateBanner)
             const result2 = await bannerCollection.updateOne(filter2, activeBanner)
-            res.send({result1, result2})
+            res.send({ result1, result2 })
+        })
+
+        app.delete("/banners/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await bannerCollection.deleteOne(query);
+            res.send(result)
         })
 
 
