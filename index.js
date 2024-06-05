@@ -35,6 +35,7 @@ async function run() {
         const districtsCollection = client.db('diagnosDB').collection('districts')
         const upazilasCollection = client.db('diagnosDB').collection('upazilas')
         const reserveCollection = client.db('diagnosDB').collection('reservations')
+        const reportCollection = client.db('diagnosDB').collection('reports')
 
         // jwt token API
         app.post("/jwt", async (req, res) => {
@@ -233,6 +234,19 @@ async function run() {
             res.send(result)
         })
 
+        app.patch("/booked-test/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updatedTest = req.body;
+            const updatedDoc = {
+                $set: {
+                    slots: updatedTest.slots,
+                }
+            }
+            const result = await testsCollection.updateOne(filter, updatedDoc);
+            res.send(result)
+        })
+
         app.delete("/tests/:id", async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
@@ -254,7 +268,7 @@ async function run() {
         app.post("/create-payment-intent", async (req, res) => {
             const { price } = req.body;
             const amount = parseInt(price * 100)
-            console.log(amount);
+            // console.log(amount);
 
             // Create a PaymentIntent with the order amount and currency
             const paymentIntent = await stripe.paymentIntents.create({
@@ -269,7 +283,7 @@ async function run() {
                 clientSecret: paymentIntent.client_secret,
             });
         });
-        
+
 
         // reservation APIs
         app.get("/reserve/:email", verifyToken, async (req, res) => {
@@ -279,6 +293,22 @@ async function run() {
                 return res.status(403).send({ message: 'Forbidden Access' })
             }
             const result = await reserveCollection.find(query).toArray()
+            res.send(result)
+
+        })
+
+        app.get("/all-reserve/:id", verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const query = { test_id: id };
+            const result = await reserveCollection.find(query).toArray()
+            res.send(result)
+
+        })
+
+        app.get("/reserve-report/:id", verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await reserveCollection.findOne(query)
             res.send(result)
 
         })
@@ -294,6 +324,25 @@ async function run() {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await reserveCollection.deleteOne(query);
+            res.send(result)
+        })
+
+        // submit test report APIs
+        app.post("/report", async (req, res) => {
+            const newReport = req.body;
+            const result = await reportCollection.insertOne(newReport);
+            res.send(result)
+        })
+
+        app.patch("/deliver-test/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    report: 'delivered'
+                }
+            }
+            const result = await reserveCollection.updateOne(filter, updatedDoc);
             res.send(result)
         })
 
