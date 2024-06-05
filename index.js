@@ -288,14 +288,17 @@ async function run() {
         // reservation APIs
         app.get("/reserve/:email", verifyToken, async (req, res) => {
             const email = req.params.email;
-            const query = { email: email };
+            const query = {
+                email: email,
+                report: 'pending'
+            };
             if (req.params.email !== req.decoded.email) {
                 return res.status(403).send({ message: 'Forbidden Access' })
             }
             const result = await reserveCollection.find(query).toArray()
             res.send(result)
 
-        })
+        })        
 
         app.get("/search-reserve", async (req, res) => {
             const email = req.query.email;
@@ -341,6 +344,17 @@ async function run() {
         })
 
         // submit test report APIs
+        app.get("/report/:email", verifyToken, async (req, res) => {
+            const email = req.params.email;
+            const query = {patient_email: email};
+            if (req.params.email !== req.decoded.email) {
+                return res.status(403).send({ message: 'Forbidden Access' })
+            }
+            const result = await reportCollection.find(query).toArray()
+            res.send(result)
+
+        })
+
         app.post("/report", async (req, res) => {
             const newReport = req.body;
             const result = await reportCollection.insertOne(newReport);
