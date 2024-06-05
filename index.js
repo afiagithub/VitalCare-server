@@ -297,6 +297,19 @@ async function run() {
 
         })
 
+        app.get("/search-reserve", async (req, res) => {
+            const email = req.query.email;
+            const test_id = req.query.test_id;
+            // console.log(email, test_id);
+            const query = {
+                email: email,
+                test_id: test_id
+            }
+            const result = await reserveCollection.find(query).toArray()
+            res.send(result)
+
+        })
+
         app.get("/all-reserve/:id", verifyToken, async (req, res) => {
             const id = req.params.id;
             const query = { test_id: id };
