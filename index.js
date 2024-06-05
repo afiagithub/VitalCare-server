@@ -37,6 +37,7 @@ async function run() {
         const reserveCollection = client.db('diagnosDB').collection('reservations')
         const reportCollection = client.db('diagnosDB').collection('reports')
         const bannerCollection = client.db('diagnosDB').collection('banners')
+        const recomCollection = client.db('diagnosDB').collection('recommendation')
 
         // jwt token API
         app.post("/jwt", async (req, res) => {
@@ -424,6 +425,14 @@ async function run() {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await bannerCollection.deleteOne(query);
+            res.send(result)
+        })
+
+        // recommendation APIs
+        app.get("/recommend/:email", verifyToken, async (req, res) => {
+            const email = req.params.email;
+            const query = {email: email}
+            const result = await recomCollection.findOne(query);
             res.send(result)
         })
 
