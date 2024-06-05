@@ -36,6 +36,7 @@ async function run() {
         const upazilasCollection = client.db('diagnosDB').collection('upazilas')
         const reserveCollection = client.db('diagnosDB').collection('reservations')
         const reportCollection = client.db('diagnosDB').collection('reports')
+        const bannerCollection = client.db('diagnosDB').collection('banners')
 
         // jwt token API
         app.post("/jwt", async (req, res) => {
@@ -298,7 +299,7 @@ async function run() {
             const result = await reserveCollection.find(query).toArray()
             res.send(result)
 
-        })        
+        })
 
         app.get("/search-reserve", async (req, res) => {
             const email = req.query.email;
@@ -346,7 +347,7 @@ async function run() {
         // submit test report APIs
         app.get("/report/:email", verifyToken, async (req, res) => {
             const email = req.params.email;
-            const query = {patient_email: email};
+            const query = { patient_email: email };
             if (req.params.email !== req.decoded.email) {
                 return res.status(403).send({ message: 'Forbidden Access' })
             }
@@ -371,6 +372,32 @@ async function run() {
             }
             const result = await reserveCollection.updateOne(filter, updatedDoc);
             res.send(result)
+        })
+
+        // banner APIs
+        app.get("/banners", verifyToken, async (req, res) => {
+            const result = await bannerCollection.find().toArray();
+            res.send(result)
+        })
+
+        app.patch("/banners/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter1 = {};
+            const filter2 = { _id: new ObjectId(id) };
+            const deactivateBanner = {
+                $set: {
+                    isActive: false
+                }
+            }
+
+            const activeBanner = {
+                $set: {
+                    isActive: true
+                }
+            }            
+            const result1 = await bannerCollection.updateMany(filter1, deactivateBanner)
+            const result2 = await bannerCollection.updateOne(filter2, activeBanner)
+            res.send({result1, result2})
         })
 
 
