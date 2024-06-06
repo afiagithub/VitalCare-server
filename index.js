@@ -10,7 +10,7 @@ const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 // middleware
 app.use(cors({
-    origin: ["http://localhost:5173"],
+    origin: ["http://localhost:5173", "https://diagnostic-app-auth.web.app", "https://diagnostic-app-auth.firebaseapp.com"],
     credentials: true
 }))
 app.use(express.json())
@@ -38,6 +38,7 @@ async function run() {
         const reportCollection = client.db('diagnosDB').collection('reports')
         const bannerCollection = client.db('diagnosDB').collection('banners')
         const recomCollection = client.db('diagnosDB').collection('recommendation')
+        const doctorCollection = client.db('diagnosDB').collection('doctors')
 
         // jwt token API
         app.post("/jwt", async (req, res) => {
@@ -98,11 +99,8 @@ async function run() {
             res.send({ admin })
         })
 
-        app.get("/userlist/blocked/:email", verifyToken, async (req, res) => {
+        app.get("/userlist/blocked/:email", async (req, res) => {
             const email = req.params.email;
-            if (email !== req.decoded.email) {
-                return res.status(403).send({ message: "forbidden access" })
-            }
             const query = { email: email };
             const user = await userCollection.findOne(query);
             let blocked = false;
@@ -294,9 +292,9 @@ async function run() {
                 email: email,
                 report: 'pending'
             };
-            if (req.params.email !== req.decoded.email) {
-                return res.status(403).send({ message: 'Forbidden Access' })
-            }
+            // if (req.params.email !== req.decoded.email) {
+            //     return res.status(403).send({ message: 'Forbidden Access' })
+            // }
             const result = await reserveCollection.find(query).toArray()
             res.send(result)
 
@@ -336,6 +334,21 @@ async function run() {
             const reservation = req.body;
             const result = await reserveCollection.insertOne(reservation);
             res.send(result)
+        })
+
+        app.patch("/cancel-reserve/:test_id", verifyToken, async (req, res) => {
+            const test_id = req.params.test_id;
+            const query = { _id: new ObjectId(test_id) };
+            const result1 = await testsCollection.findOne(query);
+            const newSlot = parseInt(result1.slots) + 1;
+            const updatedSlots = newSlot.toString();
+            const updatedDoc = {
+                $set: {
+                    slots: updatedSlots
+                }                
+            }
+            const result2 = await testsCollection.updateOne(query, updatedDoc);
+            res.send({result1, result2})
         })
 
         app.delete("/reserve/:id", async (req, res) => {
@@ -429,17 +442,21 @@ async function run() {
         })
 
         // recommendation APIs
-        app.get("/recommend/:email", verifyToken, async (req, res) => {
+        app.get("/recommend/:email", async (req, res) => {
             const email = req.params.email;
             const query = {email: email}
             const result = await recomCollection.findOne(query);
             res.send(result)
         })
 
+        app.get("/doctors", async (req, res) => {
+            const result = await doctorCollection.find().toArray();
+            res.send(result)
+        })
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
 
     }
