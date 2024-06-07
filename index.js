@@ -345,10 +345,10 @@ async function run() {
             const updatedDoc = {
                 $set: {
                     slots: updatedSlots
-                }                
+                }
             }
             const result2 = await testsCollection.updateOne(query, updatedDoc);
-            res.send({result1, result2})
+            res.send({ result1, result2 })
         })
 
         app.delete("/reserve/:id", async (req, res) => {
@@ -444,7 +444,7 @@ async function run() {
         // recommendation APIs
         app.get("/recommend/:email", async (req, res) => {
             const email = req.params.email;
-            const query = {email: email}
+            const query = { email: email }
             const result = await recomCollection.findOne(query);
             res.send(result)
         })
@@ -452,6 +452,75 @@ async function run() {
         app.get("/doctors", async (req, res) => {
             const result = await doctorCollection.find().toArray();
             res.send(result)
+        })
+
+        // statistics API
+        app.get("/totbooking", async (req, res) => {
+            const bookings = await reserveCollection.aggregate([
+                {
+                    $group: {
+                        _id: "$test_id",
+                        totalBookings: { $sum: 1 },
+                        testTitle: { $first: "$title" }
+                    }
+                },
+                {
+                    $sort: { totalBookings: -1 }
+                }
+            ]).toArray()
+            res.send(bookings);
+        })
+
+        app.get("/delivery-ratio", async (req, res) => {
+            const query1 = { report: 'pending' }
+            const query2 = { report: 'delivered' }
+            const pendingCount = await reserveCollection.countDocuments(query1);
+            const deliveryCount = await reserveCollection.countDocuments(query2);
+            res.send([
+                { status: 'pending', count: pendingCount },
+                { status: 'delivered', count: deliveryCount }
+            ]);
+        })
+
+        app.get("/top-tests", async (req, res) => {
+            const bookings = await reserveCollection.aggregate([                
+                {
+                    $addFields: { testId: { $toObjectId: "$test_id" } }
+                },
+                {
+                    $lookup: {
+                        from: "tests",
+                        localField: "testId",
+                        foreignField: "_id",
+                        as: "testDetails"
+                    }
+                },
+                {
+                    $unwind: "$testDetails"
+                },
+                {
+                    $group: {
+                        _id: "$test_id",
+                        totalBookings: { $sum: 1 },
+                        testTitle: { $first: "$title" },
+                        date: { $first: "$date" },
+                        time: { $first: "$time" },
+                        cost: { $first: "$price" },
+                    }
+                },
+                { $sort: { totalBookings: -1 } },
+                {
+                    $project: {
+                        _id: 1,
+                        totalBookings: 1,
+                        title: "$testTitle",
+                        date: 1,
+                        time: 1,
+                        dacostte: 1,
+                    }
+                }
+            ]).toArray()
+            res.send(bookings);
         })
 
         // Send a ping to confirm a successful connection
