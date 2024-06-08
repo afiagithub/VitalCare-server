@@ -188,11 +188,16 @@ async function run() {
         // all tests APIs
         app.get("/tests", async (req, res) => {
             const date = req.query.date;
+            const page = parseInt(req.query.page);
+            const size = parseInt(req.query.size);
             let query = {}
             if (date) {
                 query = { date: { $gte: date } };
             }
-            const result = await testsCollection.find(query).toArray()
+            const result = await testsCollection.find(query)
+            .skip(page * size)
+            .limit(size)
+            .toArray()
             res.send(result)
         })
 
@@ -252,6 +257,11 @@ async function run() {
             const query = { _id: new ObjectId(id) };
             const result = await testsCollection.deleteOne(query);
             res.send(result)
+        })
+
+        app.get("/test-count", async (req, res) => {
+            const count = await testsCollection.estimatedDocumentCount()
+            res.send({count})
         })
 
         app.get("/districts", async (req, res) => {
@@ -504,19 +514,20 @@ async function run() {
                         totalBookings: { $sum: 1 },
                         testTitle: { $first: "$title" },
                         date: { $first: "$date" },
-                        time: { $first: "$time" },
                         cost: { $first: "$price" },
+                        image: {$first: "$testDetails.image"}
                     }
                 },
                 { $sort: { totalBookings: -1 } },
+                { $limit: 6 },
                 {
                     $project: {
                         _id: 1,
                         totalBookings: 1,
                         title: "$testTitle",
                         date: 1,
-                        time: 1,
-                        dacostte: 1,
+                        cost: 1,
+                        image: 1
                     }
                 }
             ]).toArray()
