@@ -39,6 +39,7 @@ async function run() {
         const bannerCollection = client.db('diagnosDB').collection('banners')
         const recomCollection = client.db('diagnosDB').collection('recommendation')
         const doctorCollection = client.db('diagnosDB').collection('doctors')
+        const blogCollection = client.db('diagnosDB').collection('blogs')
 
         // jwt token API
         app.post("/jwt", async (req, res) => {
@@ -532,6 +533,18 @@ async function run() {
                 }
             ]).toArray()
             res.send(bookings);
+        })
+
+        app.get('/blogs', async(req, res) => {
+            const result = await blogCollection.find().toArray();
+            res.send(result)
+        })
+
+        app.get('/blogs/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const result = await blogCollection.findOne(query);
+            res.send(result)
         })
 
         // Send a ping to confirm a successful connection
