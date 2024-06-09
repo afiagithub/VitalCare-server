@@ -68,7 +68,7 @@ async function run() {
 
         const verifyAdmin = async (req, res, next) => {
             const email = req.decoded.email;
-            console.log(email);
+            // console.log(email);
             const query = { email: email };
             const user = await userCollection.findOne(query);
             const isAdmin = user?.role === 'admin';
@@ -127,9 +127,9 @@ async function run() {
             res.send(result)
         })
 
-        app.get("/users/:uid", async (req, res) => {
-            const user_id = req.params.uid;
-            const query = { user_id: user_id };
+        app.get("/users/:email", verifyToken, async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
             const result = await userCollection.findOne(query);
             res.send(result)
         })
@@ -162,7 +162,7 @@ async function run() {
             res.send(result)
         })
 
-        app.patch("/users/:id", async (req, res) => {
+        app.patch("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updatedDoc = {
@@ -174,7 +174,7 @@ async function run() {
             res.send(result)
         })
 
-        app.patch("/block-user/:id", async (req, res) => {
+        app.patch("/block-user/:id", verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updatedDoc = {
@@ -196,13 +196,13 @@ async function run() {
                 query = { date: { $gte: date } };
             }
             const result = await testsCollection.find(query)
-            .skip(page * size)
-            .limit(size)
-            .toArray()
+                .skip(page * size)
+                .limit(size)
+                .toArray()
             res.send(result)
         })
 
-        app.post("/tests", async (req, res) => {
+        app.post("/tests", verifyToken, verifyAdmin, async (req, res) => {
             const newTest = req.body;
             const result = await testsCollection.insertOne(newTest);
             res.send(result)
@@ -222,7 +222,7 @@ async function run() {
             res.send(result)
         })
 
-        app.patch("/tests/:id", async (req, res) => {
+        app.patch("/tests/:id", verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updatedTest = req.body;
@@ -262,7 +262,7 @@ async function run() {
 
         app.get("/test-count", async (req, res) => {
             const count = await testsCollection.estimatedDocumentCount()
-            res.send({count})
+            res.send({ count })
         })
 
         app.get("/districts", async (req, res) => {
@@ -279,7 +279,6 @@ async function run() {
         app.post("/create-payment-intent", async (req, res) => {
             const { price } = req.body;
             const amount = parseInt(price * 100)
-            // console.log(amount);
 
             // Create a PaymentIntent with the order amount and currency
             const paymentIntent = await stripe.paymentIntents.create({
@@ -303,9 +302,14 @@ async function run() {
                 email: email,
                 report: 'pending'
             };
-            // if (req.params.email !== req.decoded.email) {
-            //     return res.status(403).send({ message: 'Forbidden Access' })
-            // }
+            const result = await reserveCollection.find(query).toArray()
+            res.send(result)
+
+        })
+
+        app.get("/download-reserve/:email", verifyToken, async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
             const result = await reserveCollection.find(query).toArray()
             res.send(result)
 
@@ -314,7 +318,6 @@ async function run() {
         app.get("/search-reserve", async (req, res) => {
             const email = req.query.email;
             const test_id = req.query.test_id;
-            // console.log(email, test_id);
             const query = {
                 email: email,
                 test_id: test_id
@@ -324,7 +327,7 @@ async function run() {
 
         })
 
-        app.get("/all-reserve/:id", verifyToken, async (req, res) => {
+        app.get("/all-reserve/:id", verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { test_id: id };
             const result = await reserveCollection.find(query).toArray()
@@ -332,7 +335,7 @@ async function run() {
 
         })
 
-        app.get("/reserve-report/:id", verifyToken, async (req, res) => {
+        app.get("/reserve-report/:id", verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await reserveCollection.findOne(query)
@@ -400,12 +403,12 @@ async function run() {
         })
 
         // banner APIs
-        app.get("/banners", verifyToken, async (req, res) => {
+        app.get("/banners", verifyToken, verifyAdmin, async (req, res) => {
             const result = await bannerCollection.find().toArray();
             res.send(result)
         })
 
-        app.post("/banners", async (req, res) => {
+        app.post("/banners", verifyToken, verifyAdmin, async (req, res) => {
             const newBanner = req.body;
             const result = await bannerCollection.insertOne(newBanner);
             res.send(result)
@@ -421,11 +424,11 @@ async function run() {
             const coupon = req.params.code;
             const query = { coupon_code_name: coupon, isActive: true };
             const result = await bannerCollection.findOne(query);
-            console.log(result);
+            // console.log(result);
             res.send(result)
         })
 
-        app.patch("/banners/:id", async (req, res) => {
+        app.patch("/banners/:id", verifyToken, async (req, res) => {
             const id = req.params.id;
             const filter1 = {};
             const filter2 = { _id: new ObjectId(id) };
@@ -445,28 +448,27 @@ async function run() {
             res.send({ result1, result2 })
         })
 
-        app.delete("/banners/:id", async (req, res) => {
+        app.delete("/banners/:id", verifyToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await bannerCollection.deleteOne(query);
             res.send(result)
         })
 
-        // recommendation APIs
-        app.get("/recommend/:email", async (req, res) => {
-            const email = req.params.email;
-            const query = { email: email }
-            const result = await recomCollection.findOne(query);
+        // recommendation API
+        app.get("/recommend", async (req, res) => {
+            const result = await recomCollection.find().toArray();
             res.send(result)
         })
 
+        // doctor list API
         app.get("/doctors", async (req, res) => {
             const result = await doctorCollection.find().toArray();
             res.send(result)
         })
 
-        // statistics API
-        app.get("/totbooking", async (req, res) => {
+        // statistics APIs
+        app.get("/totbooking", verifyToken, verifyAdmin, async (req, res) => {
             const bookings = await reserveCollection.aggregate([
                 {
                     $group: {
@@ -482,7 +484,7 @@ async function run() {
             res.send(bookings);
         })
 
-        app.get("/delivery-ratio", async (req, res) => {
+        app.get("/delivery-ratio", verifyToken, verifyAdmin, async (req, res) => {
             const query1 = { report: 'pending' }
             const query2 = { report: 'delivered' }
             const pendingCount = await reserveCollection.countDocuments(query1);
@@ -494,7 +496,7 @@ async function run() {
         })
 
         app.get("/top-tests", async (req, res) => {
-            const bookings = await reserveCollection.aggregate([                
+            const bookings = await reserveCollection.aggregate([
                 {
                     $addFields: { testId: { $toObjectId: "$test_id" } }
                 },
@@ -516,7 +518,7 @@ async function run() {
                         testTitle: { $first: "$title" },
                         date: { $first: "$date" },
                         cost: { $first: "$price" },
-                        image: {$first: "$testDetails.image"}
+                        image: { $first: "$testDetails.image" }
                     }
                 },
                 { $sort: { totalBookings: -1 } },
@@ -535,14 +537,14 @@ async function run() {
             res.send(bookings);
         })
 
-        app.get('/blogs', async(req, res) => {
+        app.get('/blogs', async (req, res) => {
             const result = await blogCollection.find().toArray();
             res.send(result)
         })
 
-        app.get('/blogs/:id', async(req, res) => {
+        app.get('/blogs/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await blogCollection.findOne(query);
             res.send(result)
         })
